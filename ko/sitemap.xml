@@ -8,6 +8,11 @@
   </url>
   
   <url>
+    <loc>https://guersam.com/posts/finally-began/</loc>
+    <lastmod>2018-02-15T02:03:25+09:00</lastmod>
+  </url>
+  
+  <url>
     <loc>https://guersam.com/archives/</loc>
   </url>
   
@@ -40,6 +45,12 @@
                 hreflang="ko"
                 href="https://guersam.com/"
                 />
+  </url>
+  
+  <url>
+    <loc>https://guersam.com/posts/</loc>
+    <lastmod>2018-02-15T02:03:25+09:00</lastmod>
+    <priority>0</priority>
   </url>
   
   <url>
