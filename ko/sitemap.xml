@@ -13,10 +13,6 @@
   </url>
   
   <url>
-    <loc>https://guersam.com/archives/</loc>
-  </url>
-  
-  <url>
     <loc>https://guersam.com/categories/</loc>
     <priority>0</priority>
     <xhtml:link
@@ -28,22 +24,6 @@
                 rel="alternate"
                 hreflang="ko"
                 href="https://guersam.com/categories/"
-                />
-  </url>
-  
-  <url>
-    <loc>https://guersam.com/</loc>
-    <lastmod>2018-02-15T02:30:35+09:00</lastmod>
-    <priority>0</priority>
-    <xhtml:link
-                rel="alternate"
-                hreflang="en"
-                href="https://guersam.com/en/"
-                />
-    <xhtml:link
-                rel="alternate"
-                hreflang="ko"
-                href="https://guersam.com/"
                 />
   </url>
   
@@ -65,6 +45,22 @@
                 rel="alternate"
                 hreflang="ko"
                 href="https://guersam.com/tags/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://guersam.com/</loc>
+    <lastmod>2018-02-15T02:30:35+09:00</lastmod>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://guersam.com/en/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ko"
+                href="https://guersam.com/"
                 />
   </url>
   
