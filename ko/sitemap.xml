@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>https://guersam.com/about/</loc>
+    <lastmod>2018-02-15T02:30:35+09:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://guersam.com/archives/</loc>
+  </url>
+  
+  <url>
+    <loc>https://guersam.com/categories/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://guersam.com/en/categories/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ko"
+                href="https://guersam.com/categories/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://guersam.com/</loc>
+    <lastmod>2018-02-15T02:30:35+09:00</lastmod>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://guersam.com/en/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ko"
+                href="https://guersam.com/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://guersam.com/tags/</loc>
+    <priority>0</priority>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://guersam.com/en/tags/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ko"
+                href="https://guersam.com/tags/"
+                />
+  </url>
+  
+</urlset>
