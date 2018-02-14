@@ -3,47 +3,47 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://guersam.com/en/categories/</loc>
+    <loc>http://guersam.com/en/categories/</loc>
     <priority>0</priority>
     <xhtml:link
                 rel="alternate"
                 hreflang="ko"
-                href="https://guersam.com/categories/"
+                href="http://guersam.com/categories/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
-                href="https://guersam.com/en/categories/"
+                href="http://guersam.com/en/categories/"
                 />
   </url>
   
   <url>
-    <loc>https://guersam.com/en/</loc>
+    <loc>http://guersam.com/en/</loc>
     <priority>0</priority>
     <xhtml:link
                 rel="alternate"
                 hreflang="ko"
-                href="https://guersam.com/"
+                href="http://guersam.com/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
-                href="https://guersam.com/en/"
+                href="http://guersam.com/en/"
                 />
   </url>
   
   <url>
-    <loc>https://guersam.com/en/tags/</loc>
+    <loc>http://guersam.com/en/tags/</loc>
     <priority>0</priority>
     <xhtml:link
                 rel="alternate"
                 hreflang="ko"
-                href="https://guersam.com/tags/"
+                href="http://guersam.com/tags/"
                 />
     <xhtml:link
                 rel="alternate"
                 hreflang="en"
-                href="https://guersam.com/en/tags/"
+                href="http://guersam.com/en/tags/"
                 />
   </url>
   

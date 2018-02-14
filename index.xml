@@ -2,30 +2,30 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Finally began</title>
-    <link>https://guersam.com/</link>
+    <link>http://guersam.com/</link>
     <description>Recent content on Finally began</description>
     <generator>Hugo -- gohugo.io</generator>
     <lastBuildDate>Thu, 15 Feb 2018 02:30:35 +0900</lastBuildDate>
     
-        <atom:link href="https://guersam.com/index.xml" rel="self" type="application/rss+xml" />
+        <atom:link href="http://guersam.com/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>About</title>
-      <link>https://guersam.com/about/</link>
+      <link>http://guersam.com/about/</link>
       <pubDate>Thu, 15 Feb 2018 02:30:35 +0900</pubDate>
       
-      <guid>https://guersam.com/about/</guid>
+      <guid>http://guersam.com/about/</guid>
       <description>&lt;p&gt;구에르삼입니다.&lt;/p&gt;
 </description>
     </item>
     
     <item>
       <title>Archives</title>
-      <link>https://guersam.com/archives/</link>
+      <link>http://guersam.com/archives/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://guersam.com/archives/</guid>
+      <guid>http://guersam.com/archives/</guid>
       <description></description>
     </item>
     
