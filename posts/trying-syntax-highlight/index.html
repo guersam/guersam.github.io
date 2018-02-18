@@ -1,0 +1,146 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <title>guersam.com</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="The HTML5 Herald" />
+  <meta name="author" content="guersam" />
+  <meta name="generator" content="Hugo 0.36.1" />
+  <link rel="shortcut icon" href="/favicon.ico">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Slab|Ruda" />
+  <link rel="stylesheet" type="text/css" href="/css/styles.css" />
+</head>
+
+<body>
+  <div id="container">
+    <header>
+      <h1>
+                <a href="/">guersam.com</a>
+            </h1>
+
+      <ul id="social-media">
+        
+        <li><a href="https://twitter.com/guersam"><i class="fa fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+          
+        <li><a href="https://github.com/guersam"><i class="fa fa-github fa-lg" aria-hidden="true"></i></a></li>
+           
+      </ul>
+      
+      <p><em>personal blog</em></p>
+      
+    </header>
+
+    
+<nav>
+    <ul>
+        
+        <li>
+            <a class="" href="/posts/">
+                <i class="fa-li fa  fa-lg"></i><span>Posts</span>
+            </a>
+        </li>
+        
+        <li>
+            <a class="" href="/about/">
+                <i class="fa-li fa  fa-lg"></i><span>About</span>
+            </a>
+        </li>
+        
+    </ul>
+</nav>
+
+    <main>
+
+
+
+
+<article>
+
+    <h1>문법 강조가 잘 되는지 알아봅시다</h1>
+
+    
+        <aside>
+    <ul>
+        <li>
+            <time class="post-date" datetime="2018-02-18T15:12:51&#43;09:00">Feb 18, 2018</time>
+        </li>
+        
+        
+
+        
+        <li>
+            <em>
+                
+                    
+                    <a href="/tags/hugo/">#hugo</a>
+                
+            </em>
+        </li>
+        
+
+        <li>1 min read</li>
+    </ul>
+</aside>
+    
+
+    <p>가끔 코드도 올려볼까 합니다. 신나겠지요.</p>
+
+<p>본문 초반에 소스코드가 들어가면 내용이 목록에도 다짜고짜 표시되어 보기 좋지 않으니 코드 블록 전에 &lt;!&ndash;more&ndash;&gt;를 직접 붙여 주어야 합니다.</p>
+
+<p></p>
+
+<p>원본 마크다운 파일에는 위 문단과 이 문단 사이에 &lt;!&ndash;more&ndash;&gt;가 들어있지만 휴고가 알아서 잘라먹고 html파일에는 보여주지 않습니다. 어쨌든 소스코드를 넣어 볼까요,</p>
+<div class="highlight"><pre style="background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-scala" data-lang="scala">$ amm
+<span style="color:#458;font-weight:bold">Loading</span><span style="font-weight:bold">...</span>
+<span style="color:#458;font-weight:bold">Welcome</span> to the <span style="color:#458;font-weight:bold">Ammonite</span> <span style="color:#458;font-weight:bold">Repl</span> <span style="color:#099">1.0</span><span style="font-weight:bold">.</span><span style="color:#099">1</span>
+<span style="font-weight:bold">(</span><span style="color:#458;font-weight:bold">Scala</span> <span style="color:#099">2.12</span><span style="font-weight:bold">.</span><span style="color:#099">3</span> <span style="color:#458;font-weight:bold">Java</span> <span style="color:#099">1.8</span><span style="font-weight:bold">.</span><span style="color:#099">0</span>_151<span style="font-weight:bold">)</span>
+<span style="color:#458;font-weight:bold">If</span> you like <span style="color:#458;font-weight:bold">Ammonite</span><span style="font-weight:bold">,</span> please support our development at www<span style="font-weight:bold">.</span>patreon<span style="font-weight:bold">.</span>com<span style="font-weight:bold">/</span>lihaoyi
+
+<span style="font-weight:bold">@</span> <span style="font-weight:bold">import</span> <span style="color:#555">$ivy.</span>`org.typelevel::cats-core:1.0.1` 
+<span style="font-weight:bold">import</span> <span style="color:#555">$ivy.$</span>                               
+
+<span style="font-weight:bold">@</span> <span style="font-weight:bold">import</span> <span style="color:#555">cats.implicits._</span> 
+<span style="font-weight:bold">import</span> <span style="color:#555">cats.implicits._</span>
+
+<span style="font-weight:bold">@</span> <span style="font-weight:bold">val</span> ys <span style="font-weight:bold">=</span> <span style="font-weight:bold">(</span><span style="color:#099">1</span> to <span style="color:#099">10</span><span style="font-weight:bold">).</span>toList<span style="font-weight:bold">.</span>traverse<span style="font-weight:bold">(</span><span style="font-weight:bold">_</span><span style="font-weight:bold">.</span>show<span style="font-weight:bold">.</span>some<span style="font-weight:bold">)</span> 
+ys<span style="font-weight:bold">:</span> <span style="color:#458;font-weight:bold">Option</span><span style="font-weight:bold">[</span><span style="color:#458;font-weight:bold">List</span><span style="font-weight:bold">[</span><span style="color:#458;font-weight:bold">String</span><span style="font-weight:bold">]]</span> <span style="font-weight:bold">=</span> <span style="color:#458;font-weight:bold">Some</span><span style="font-weight:bold">(</span>
+  <span style="color:#458;font-weight:bold">List</span><span style="font-weight:bold">(</span><span style="color:#b84">&#34;1&#34;</span><span style="font-weight:bold">,</span> <span style="color:#b84">&#34;2&#34;</span><span style="font-weight:bold">,</span> <span style="color:#b84">&#34;3&#34;</span><span style="font-weight:bold">,</span> <span style="color:#b84">&#34;4&#34;</span><span style="font-weight:bold">,</span> <span style="color:#b84">&#34;5&#34;</span><span style="font-weight:bold">,</span> <span style="color:#b84">&#34;6&#34;</span><span style="font-weight:bold">,</span> <span style="color:#b84">&#34;7&#34;</span><span style="font-weight:bold">,</span> <span style="color:#b84">&#34;8&#34;</span><span style="font-weight:bold">,</span> <span style="color:#b84">&#34;9&#34;</span><span style="font-weight:bold">,</span> <span style="color:#b84">&#34;10&#34;</span><span style="font-weight:bold">)</span>
+<span style="font-weight:bold">)</span></code></pre></div>
+<p>휴고가 <strong>```scala</strong> 같은 코드 블록에도 문법 강조를 적용하게 하려면 <code>config.toml</code>에서 <code>pygmentsCodeFences = true</code> 설정을 켜야 했습니다.</p>
+
+</article>
+
+
+<section class="post-nav">
+    <ul>
+        
+        <li>
+            <a href="https://guersam.com/posts/finally-began/"><i class="fa fa-chevron-circle-left"></i> 블로그를 만들었습니다.</a>
+        </li>
+        
+        
+    </ul>
+</section>
+    
+
+
+
+
+
+</main>
+    <footer>
+        <h6>Copyright &copy; 2018 guersam | 
+            Rendered by <a href="https://gohugo.io" title="Hugo">Hugo</a> |
+            <a href="https://guersam.com/index.xml">Subscribe</a></h6>
+    </footer>
+</div>
+<script src="/js/scripts.js"></script>
+</body>
+
+</html>

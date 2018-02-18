@@ -6,9 +6,19 @@
     <description>Recent content in Tags on guersam.com</description>
     <generator>Hugo -- gohugo.io</generator>
     <copyright>Copyright &amp;copy; 2018 guersam</copyright>
+    <lastBuildDate>Sun, 18 Feb 2018 15:12:51 +0900</lastBuildDate>
     
 	<atom:link href="https://guersam.com/tags/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Hugo</title>
+      <link>https://guersam.com/tags/hugo/</link>
+      <pubDate>Sun, 18 Feb 2018 15:12:51 +0900</pubDate>
+      
+      <guid>https://guersam.com/tags/hugo/</guid>
+      <description></description>
+    </item>
     
   </channel>
 </rss>

@@ -4,12 +4,17 @@
   
   <url>
     <loc>https://guersam.com/posts/</loc>
-    <lastmod>2018-02-15T02:03:25+09:00</lastmod>
+    <lastmod>2018-02-18T15:12:51+09:00</lastmod>
   </url>
   
   <url>
     <loc>https://guersam.com/about/</loc>
     <lastmod>2018-02-15T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://guersam.com/posts/trying-syntax-highlight/</loc>
+    <lastmod>2018-02-18T15:12:51+09:00</lastmod>
   </url>
   
   <url>
@@ -33,7 +38,14 @@
   </url>
   
   <url>
+    <loc>https://guersam.com/tags/hugo/</loc>
+    <lastmod>2018-02-18T15:12:51+09:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
     <loc>https://guersam.com/tags/</loc>
+    <lastmod>2018-02-18T15:12:51+09:00</lastmod>
     <priority>0</priority>
     <xhtml:link
                 rel="alternate"
