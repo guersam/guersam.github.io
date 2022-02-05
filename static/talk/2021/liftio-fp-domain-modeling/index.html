@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <title>함수형 도메인 주도 설계 구현</title>
+    <link rel="shortcut icon" href="./favicon.ico" />
+    <link rel="stylesheet" href="./dist/reset.css" />
+    <link rel="stylesheet" href="./dist/reveal.css" />
+    <link rel="stylesheet" href="./dist/theme/white.css" id="theme" />
+    <link rel="stylesheet" href="./css/highlight/zenburn.css" />
+
+
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides"><section  data-markdown><script type="text/template">
+
+<style>
+body {
+  word-break: keep-all;
+}
+.reveal h2, .reveal h3 {
+  margin-bottom: 1em;
+}
+
+.small {
+  font-size: 0.6em;
+}
+</style>
+
+# 함수형 도메인 주도 설계 구현
+
+박지수
+
+CTO, 두물머리
+
+liftIO 2021
+
+<aside class="notes">
+스피커 노트 테스트
+</aside>
+</script></section><section  data-markdown><script type="text/template">
+## 오늘 얘기하지 않을 것
+
+- 도메인 주도 개발(DDD) 자체에 대해서는 설명하지 않습니다.
+- DDD의 전략적 패턴은 중요하지만 다루지 않습니다.
+- 다행히 DDD 몰라도 됩니다.
+
+<aside class="notes">
+DDD 아시는 분들은 연결되는 개념이 있는 정도
+</aside>
+</script></section><section  data-markdown><script type="text/template">
+## 목차
+
+- 대수적 자료형을 이용한 도메인 모델링
+- ZIO로 실제로 유용한 프로그램 만들기
+</script></section><section  data-markdown><script type="text/template">
+## 목차
+
+- **대수적 자료형을 이용한 도메인 모델링**
+- ZIO로 실제로 유용한 프로그램 만들기
+
+<aside class="notes">
+DDD 전술적 패턴 중에서는 Entity나 Value Object 정의할 때 쓰실 수 있을 거에요.
+</aside>
+</script></section><section  data-markdown><script type="text/template">
+### 예제: 결제 시스템
+
+두 가지 할인 유형
+
+- 비율
+  - 퍼센트 (정수)
+- 정액
+  - 액수 (실수)
+  - 통화 (통화코드)
+
+<aside class="notes">
+오늘은 간단한 결제 시스템 일부를 예로 들어서 설명을 드릴 거에요.
+
+두 가지 할인 유형이 있는데 하나는 퍼센트 단위로 구매금액에 비례해서 할인을 해 주는 거고요,
+
+나머지 하나는 정해진 액수만큼 할인을 해주는 건데 우리 시스템은 k-pop을 등에 업고 전 세계에서 결제가 발생한다고 해볼게요, 그래서 통화 코드가 같이 필요합니다.
+</aside>
+</script></section><section  data-markdown><script type="text/template">
+### Antipattern: 테이블 주도 설계
+
+```scala
+enum DiscountType:
+  case Percentage   // 퍼센트
+  case FixedAmount  // 정액할인
+
+class Discount(
+  var discountType: DiscountType,
+  var percentage: Option[Int],
+  var fixedAmount: Option[BigDecimal],
+  var fixedAmountCurrency: Option[Currency]
+)
+```
+
+<aside class="notes">
+대부분 설계를 한다고 하면 이렇게 ERD 먼저 다 그리고 테이블 기준으로 구조를 짜는 경우가 많은데, 엄밀한 용어는 아니지만 저는 테이블 주도 설계라고 할게요.
+
+이건 함수형은 당연히 아니고 객체지향적이지도 않은데 자주 쓰이는 방식입니다.
+
+테이블 설계 과정에서 정규화를 하긴 하는데 이렇게 별개 테이블로 빼기 좀 애매한 것들은 그냥 뭉개고 넘어가는 경우도 많지요.
+
+도메인이 단순한 경우에는 이래도 되고 잘 돌아가면 장땡이죠
+</aside>
+</script></section><section ><section data-markdown><script type="text/template">
+### Table Driven Design의 문제
+
+- 높은 복잡도
+- 인지 부하가 늘어남
+
+유지보수가 어렵다!
+
+<aside class="notes">
+
+</aside>
+</script></section><section data-markdown><script type="text/template">
+#### 복잡도 증가
+
+```scala
+enum DiscountType:
+  case Percentage
+  case FixedAmount   
+
+class Discount(
+  var discountType: DiscountType,
+  var percentage: Option[Int],
+  var fixedAmount: Option[BigDecimal],
+  var fixedAmountCurrency: Option[Currency]
+)
+```
+
+```
+C(Discount) = C(discountType) * C(percentage) * 
+              C(fixedAmount) * C(fixedAmountCurrency)
+            = C(DiscountType) C(Option[Int]) *
+              C(Option[BigDecimal]) * C(Option[Currency])
+            = 2 * 2 * 2 * 2
+            = 16
+```
+
+`Discount`가 가질 수 있는 경우의 수는 16개
+
+<aside class="notes">
+</aside>
+</script></section><section data-markdown><script type="text/template">
+#### 잘못된 상태를 표현 가능
+
+```scala [1-6|10-11|15]
+val valid = new Discount(
+  discountType = FixedAmount,
+  percentage = None,
+  fixedAmount = Some(10.0),
+  fixedAmountCurrency = Some(Currency.USD)
+)
+
+val invalid = new Discount(
+  discountType = FixedAmount,
+  percentage = Some(10),  /* 값이 없어야 함 */
+  fixedAmount = None,     /* 값이 있어야 함 */
+  fixedAmountCurrency = Some(Currency.USD)
+)
+
+valid.discountType = Percentage // ???
+```
+
+<aside class="notes">
+
+</aside>
+</script></section><section data-markdown><script type="text/template">
+#### 잘못된 값에 접근 가능
+
+```scala [|3,6]
+def discount(subtotal: Money, d: Discount): Money =
+  if (d.discountType == Percentage) {
+    d.fixedAmount.get // FixedAmount?
+    // ...
+  } else if (d.discountType == FixedAmount) {
+    d.percentage.get // Percentage?
+    // ...
+  }
+```
+
+<aside class="notes">
+
+</aside>
+</script></section><section data-markdown><script type="text/template">
+### 유지보수할 때 생기는 일
+
+- 특정 할인 유형에 새로운 필드 추가
+  - 계산 과정에 반영하는걸 까먹었다!
+  - 다른 할인 유형 계산식에 넣었다!
+- 새로운 할인 유형 추가
+  - `else if` 구문 추가를 잊었다!
+    - 기존 코드에도 `else if` 대신 `else`가 있었다면!?
+</script></section></section><section ><section data-markdown><script type="text/template">
+### 대수적 자료형 (ADT)
+
+Algebraic Data Type, 합성 타입
+
+#### Product Type
+
+```scala
+(3, "hello", true): (Int, String, Boolean)
+```
+
+#### Sum Type <!-- .element: style="margin-top: 1.0em;" -->
+
+```scala
+enum Weekday:
+  case Mon, Tue, Wed, Thu, Fri, Sat, Sun
+```
+
+<aside class="notes">
+대수적 자료형(Algebraic Data Type, ADT)는 일종의 합성 타입입니다. 합성타입이라는게 뭐냐면 두 개 이상의 타입이 합쳐져서 하나의 타입을 구성하는 거에요.
+
+대표적으로 곱 타입과 합 타입이 있습니다.
+
+곱 타입은 익숙하실 투플처럼 각 요소들이 동시에 있는 거고요,
+
+합 타입은 열거형이 C언의 Union처럼 가능한 값의 종류는 여러 가지가 있는데 실제 값은 그 중 하나만 쓰는 거에요.
+</aside>
+</script></section><section data-markdown><script type="text/template">
+#### Sum + Product 예: Option <!-- .element: style="margin-top: 1.0em;" -->
+
+```scala
+enum Option[+A]:
+  case Some(x: A)
+  case None
+```
+
+<aside class="notes">
+실무에서 ADT로 모델링했다고 하면 대체로 합과 곱 두 가지를 같이 쓰는 경우를 얘기하고요, 대표적으로 Option 타입이 있습니다.
+
+참고로 ADT라고 하면 추상 자료형(Abstract Data Type)이 많이 나오는데 함수형 언어에서는 주로 대수적 자료형을 얘기합니다.
+</aside>
+</script></section></section><section ><section data-markdown><script type="text/template">
+### ADT를 이용한 도메인 모델링
+
+```scala
+enum Discount:
+  case Percentage(percent: Int)
+  case Fixed(amount: BigDecimal, currency: Currency) 
+```
+
+<div class="fragment">
+
+```
+할인
+ - 비율: 퍼센트(정수)
+ - 정액: 액수(실수), 통화(통화코드)
+```
+
+</div>
+
+<div class="fragment">
+
+```scala
+def discount(subtotal: Money, d: Discount): Money =
+  d match {
+    case Percentage(percent) => // amount 접근 불가
+    case Fixed(amount, currency) => // percent 접근 불가
+  }
+```
+
+</div>
+
+<aside class="notes">
+아까랑 같은 문제를 ADT로 표현한 예입니다.
+
+Percentage와 Fixed로 나눈 건 Sum Type을 쓴 거고요, Fixed 안에 amount, currency가 같이 있는건 Product type입니다.
+
+(fragment 이후)
+
+처음 한글로 보여드렸던 정의랑 비교해 볼게요. 자연어로 정리했던 도메인 개념들과 시각적으로도 비슷한 걸 보실 수 있습니다.
+
+(fragment 이후)
+
+ADT로 선언한 값을 평가할 때는 패턴 매칭이라는 걸 흔히 씁니다.
+이런 식으로 ADT 선언한 거랑 거의 비슷한 방식으로 값을 꺼내 쓸 수 있고요,
+많이들 아실 switch문의 업업업그레이드 버전이라고 생각하시면 됩니다.
+
+스위프트, 코틀린 같은 언어에서 비슷한 걸 보셨을 수도 있고 파이썬이나 자바에도
+비슷한 문법이 추가될 예정이에요.
+</aside>
+</script></section><section data-markdown><script type="text/template">
+### ADT로 모델링 시 장점
+
+- 유효한 상태만 표현 가능
+- 복잡도 감소
+</script></section><section data-markdown><script type="text/template">
+### ADT 케이스의 복잡도
+
+```scala
+enum Discount:
+  case Percentage(percent: Int)
+  case Fixed(amount: BigDecimal, currency: Currency)
+```
+
+```scala
+C(Discount) = C(Percentage) + C(Fixed)
+            = C(percent) + (C(amount) * C(currency))
+            = C(Int) + (C(BigDecimal) * C(Currency))
+            = 1 + (1 * 1)
+            = 2
+```
+
+<aside class="notes">
+이 데이터 타입이 가질 수 있는 경우의 수를 아까처럼 계산해 보면 훨씬 복잡도가 낮은 걸 알 수 있습니다.
+
+아까 테이블 주도 설계한 거랑은 다르게 하나의 Discount 값 자체가 Percentage 또는 Fixed 중 하나만 가질 수 있으니까 최종적인 복잡도는 Percentage와 Fixed 각각의 경우의 수를 합한 값일 거고요,
+
+각각의 타입을 보면 또 이전에는 할인 유형에 따라서 각각의 숫자나 통화 값들이 있거나 없을 수가 있으니까 있는 경우 없는 경우를 다 고려해야 했는데, 지금은 Percentage나 Fixed 자체가 또 product type이니까 다른 경우는 생각 안하고 배타적으로 자기한테 필요한 값만 가질 수가 있지 않겠습니까..
+
+그렇게 계산을 해보면 각각 필드들은 항상 값이 있으니까 경우의 수가 하나만 있는 거고 최종적으로는 Percentage랑 Fixed의 경우의 수를 더해서 두 가지 경우만 신경쓰면 되는 거죠.
+</aside>
+</script></section></section><section  data-markdown><script type="text/template">
+### 테이블 주도 vs. 함수형
+
+테이블 주도
+
+```scala
+enum DiscountType:
+  case Percentage
+  case FixedAmount   
+
+class Discount(
+  var discountType: DiscountType,
+  var percentage: Option[Int],
+  var fixedAmount: Option[BigDecimal],
+  var fixedAmountCurrency: Option[Currency]
+)
+```
+
+함수형
+
+```scala
+enum Discount:
+  case Percentage(percent: Int)
+  case Fixed(amount: BigDecimal, currency: Currency)
+```
+
+<aside class="notes">
+눈으로 보기에도 코드 분량이 줄어들었지요, 근데 그게 중요한 게 아니고, 각각의 경우에 복잡도가 늘어나는 속도를 비교해 보시면 좋을 거 같아요.
+
+지금은 설명하려고 좀 작은 예를 들어드린 건데 실무에서 컬럼 30~40개씩 있는 테이블 다뤄보신 분들은 얼마나 복잡도가 가파르게 증가하는지 아실 수 있을 거에요.
+</aside>
+</script></section><section ><section data-markdown><script type="text/template">
+### Either 타입을 이용한 도메인 예외 처리
+
+Either ADT
+
+```scala
+enum Either[+A, +B]:
+  case Left(value: A)
+  case Right(value: B)
+```
+
+러스트의 `Result`도 같은 구조 <!-- .element: style="margin-top: 1.6em;" -->
+
+```rust
+pub enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+```
+
+<aside class="notes">
+순수 함수형 프로그램은 오류가 발생했을 때 상위 스택으로 던지는 게 아니라 이렇게 ADT를 이용해 성공 케이스와 실패 케이스를 나눠서 값으로 표현해요.
+
+Rust의 Result 타입이 같은 구조로 되어 있지요.
+</aside>
+</script></section><section data-markdown><script type="text/template">
+#### Either 타입은 우편향
+
+```scala []
+case class LengthError()
+
+def oddLength(str: String): Either[LengthError, Int] =
+  str.length match
+    case n if n % 2 == 0 => Right(n)
+    case n => Left(LengthError())
+```
+
+<div class="fragment">
+
+```scala []
+val result =
+  for
+    s <- oddLength("scala")    // Right(5)
+    h <- oddLength("haskell")  // Right(7)
+  yield s + h
+
+assert(result == Right(12))
+```
+
+</div>
+<div class="fragment">
+
+```scala [|4,8|5,8]
+val result =
+  for
+    s <- oddLength("scala")    // Right(5)
+    j <- oddLength("java")     // Left(LengthError())
+    h <- oddLength("haskell")  // 평가하지 않음
+  yield s + j + h
+
+assert(result == Left(LengthError()))
+```
+</div>
+
+<aside class="notes">
+Either타입은 '오른쪽에 치우쳤다'고 얘기하는데요, 여기 문자열이 짝수인 경우에만 길이를 세어주고 아니면 LengthError를 돌려주는 oddLength함수가 있습니다.
+
+(next)
+
+아래 사용예를 보시면 for문 안에서 각 oddLength함수의 출력이 그냥 정수형인 것처럼 더하고 최종 결과도 Right(12)인걸 보실 수 있죠, 이 문법은 async/await 구문의 일반화된 버전이라고 보시면 되는데 자세한 설명은 지금은 생략하겠습니다.
+
+(next)
+
+다음 예에서는 중간에 java가 들어왔습니다. 자바는 짝수니까 oddLength의 정의에 따라 Right(4)가 아니라 Left(LengthError())값을 돌려주겠죠, 그러면 그 뒤의 하스켈 부분은 평가하지 않고 이 for문 전체의 값이 Left값으로 고정됩니다.
+
+이런 특성을 두고 Either타입이 오른쪽에 치우쳤다고 하고요, 실제 비즈니스 로직을 구현할 때는 위에 보신 for문같은 걸 써서 결과값이 성공인 경우만 편하게 따라다니면서도 전체 표현식에서는 처리하지 않은 오류가 있을 수 있다는 걸 타입을 통해 드러냅니다.
+
+DDD에서는 저장소같은 외부 시스템에 접근하지 않는 순수한 검증 로직을 이렇게 표현하면 테스트하기도 쉽고 이게 다른 이펙트 없는 그냥 로직이라는 걸 타입만 봐도 바로 알 수가 있어요.
+</aside>
+</script></section></section><section  data-markdown><script type="text/template">
+### 그 밖의 함수형 도메인 모델링 도구
+
+- Opaque Type (Newtype)
+- Refinement Type
+- Phantom Type
+- Lens
+- ...
+
+<aside class="notes">
+그 외에도 이런 도구들을 도메인 모델링 할 때 쓸 수 있습니다.
+
+근데 여기까지는 인터넷 조금만 찾으면 금방 나오는 것들이고요...
+</aside>
+</script></section><section  data-markdown><script type="text/template">
+## 다 좋은데 실무에서 쓸 수 있나?
+
+- 오류 처리?
+- DB 연결?
+- 설정 관리?
+- 의존성 관리?
+
+실제로 유용한 프로그램은 대부분 외부 세계와 상호작용
+</script></section><section  data-markdown><script type="text/template">
+## Effect System
+
+순수 함수형 프로그램이 외부 세계와 상호작용하는 방법
+
+- 하스켈: IO
+- 스칼라: ScalaZ, Cats Effect, **ZIO**
+
+<aside class="notes">
+리액트의 `useEffect` Hook
+</aside>
+</script></section><section  data-markdown><script type="text/template">
+## 목차
+
+- 대수적 자료형을 이용한 도메인 모델링
+- **ZIO로 실제로 유용한 프로그램 만들기**
+
+<aside class="notes">
+DDD랑 자주 엮이는 아키텍처 패턴이 Hexagonal, Onion 등인데 이런 관점에서 Application Layer나 Infrastructure Layer를 ZIO를 써서 구현하는 방법 중 몇 가지만 간단히 소개를 드릴게요.
+</aside>
+</script></section><section  data-markdown><script type="text/template">
+### 순수 함수형 프로그램의 특징
+
+#### 절차적
+
+- 부분적: 모든 입력을 처리하지 않음 (예외)
+- 비결정적: 같은 입력, 다른 출력
+- 비순수: 부수효과, 실행 중 값이 변함
+
+<div style="margin-top: 0.8em;"></div>
+
+#### 함수형
+
+- 전체적: 모든 입력에 대한 출력이 존재함
+- 결정적: 입력값이 같으면 출력값도 같음
+- 순수함: 부수효과가 없음
+
+출처: https://zio.dev/overview/overview_background <!-- .element: class="small" -->
+
+<aside class="notes">
+(절차형은 대충 넘어가고 함수형만 얘기하자)
+
+절차형과 비교해서 함수형 프로그램의 특징을 간단히 설명드릴게요,
+
+먼저 전체적, 모든 입력에 대해 출력값이 존재합니다. 절차적인 함수는 어떤 입력에 대해서는 예외를 던지거나 segmentation fault가 발생하는 것처럼 부분적인 반면에 순수한 함수는 모든 입력값에 대해 출력값을 가집니다.
+
+...
+</aside>
+</script></section><section  data-markdown><script type="text/template">
+### FAQ: 순수 함수형 이펙트가 가능한가요?
+
+외부 세계와 상호작용한다매?
+</script></section><section  data-markdown><script type="text/template">
+### 가능: 함수형 이펙트 동작원리
+
+- 프로그램의 명세와 실행을 분리합니다.
+- 함수를 이용해 작은 프로그램을 큰 프로그램으로 조립합니다.
+- 비슷한 사례
+  - 파이썬 스크립트와 인터프리터
+  - Abstract Syntax Tree (AST)
+  - Continuation-Passing Style (CPS)
+
+<aside class="notes">
+가능합니다.
+
+순수 함수형 프로그램에서는 명세와 실행을 분리하는 방식으로 순수성을 지키면서도 유용한 프로그램을 만들 수 있습니다.
+
+비슷한 사례로 파이썬같은 고급 언어와 인터프리터의 관계를 들 수 있습니다.
+
+기계어 대신 사람이 읽고 쓰기 편한 스크립트를 쓰면 파이썬 인터프리터가 한줄한줄 해석을 하면서 실행시킬 수도 있지만 실행하는 대신 pycharm같은 IDE에서 편집하면서 자동으로 분석을 해줄 수도 있고, pypy처럼 just-in-time 인터프리터를 통해서 런타임 성능을 향상시킬 수도 있고요.
+</aside>
+</script></section><section ><section data-markdown><script type="text/template">
+### 예: Console
+
+#### ADT
+
+```scala
+enum Console[+A]:
+  case Return(value: () => A)
+  case PrintLine(line: String, rest: Console[A])
+  case ReadLine(rest: String => Console[A}])
+```
+
+출처: https://zio.dev/overview/overview_background <!-- .element: class="small" -->
+
+<aside class="notes">
+평소에 많이들 쓰시는 텍스트 콘솔을 예로 들어볼게요.
+
+먼저 콘솔이 수행하는 동작 중에 가장 핵심적인 것들만 데이터 타입으로 정의합니다. 여기서는 아까 보여드린 ADT를 써서 만들어 볼게요.
+
+일단 터미널에 값을 출력하는게 있을 거고, 반대로 사용자에게서 값을 읽어오는 것도 있을 거고요, 읽어온 값을 갖고 있는 부분은 별도의 오퍼레이션으로 분리할게요.
+
+눈여겨보실 부분은 ReadLine에 있는 rest 함수인데요, 함수형 프로그램에서는 정수나 문자열처럼 함수도 일급 객체니까 이런 식으로 데이터 타입 안에 넣을 수가 있어요.
+
+비슷하게 PrintLine의 경우에도 문자열을 출력한 다음에 뭘 할거냐, 이걸 다시 Console 타입으로 재귀적으로 갖게 되고요,
+</aside>
+</script></section><section data-markdown><script type="text/template">
+### 예: Console (Cont. 1)
+
+#### 프로그램
+
+```scala
+val example1: Console[Unit] = 
+  PrintLine("안녕하세요, 이름이 무엇인가요?",
+    ReadLine(name =>
+      PrintLine(s"${name}님, 반가워요.",
+        Return(() => ()))))
+```
+
+출처: https://zio.dev/overview/overview_background <!-- .element: class="small" -->
+
+<aside class="notes">
+방금 정의한 핵심적인 operation들로 프로그램을 만든 예시입니다.
+
+이름이 뭐냐고 물어보고, 사용자한테서 이름을 입력 받아서 그 값을 다음 출력문에 쓰고, 마지막은 Unit값을 리턴하면서 끝나는 프로그램이에요.
+
+Unit은 void랑 비슷하다고 보시면 되는데 지금은 깊게는 모르셔도 되고요,
+
+이 프로그램이 당장 실제로 뭘 출력하는 게 아니라 Console[Unit] 타입을 갖는 하나의 값이라는 점을 봐주시면 좋을 것 같아요.
+</aside>
+</script></section><section data-markdown><script type="text/template">
+### 예: Console (Cont. 2)
+
+#### 인터프리터
+
+```scala
+def interpret[A](program: Console[A]): A = program match {
+  case Return(value) => 
+    value()
+  case PrintLine(line, next) => 
+    println(line)
+    interpret(next)
+  case ReadLine(next) =>
+    interpret(next(scala.io.StdIn.readLine()))
+}
+```
+
+출처: https://zio.dev/overview/overview_background <!-- .element: class="small" -->
+
+<aside class="notes">
+그럼 실제로 어떻게 실행을 시키냐, 별도의 번역 과정을 거치게 되는데요, 여기 보시는 것처럼 패턴매칭을 써서 아까 정의한 핵심 동작 하나하나에 대해 실제로 실행할 때 일어날 일들을 지정해 줍니다.
+
+아마 프로그래밍 입문하실 때 간단한 커맨드 라인 계산기 만들어 보신 분들은 좀 익숙하실 수 있을 것 같아요.
+
+재밌는 점은 프로그램이 그냥 하나의 값이기 때문에 꼭 이렇게만 번역기를 만들 필요가 없다는 점입니다. 똑같은 프로그램을 웹소켓에 연결해서 웹 브라우저를 통해 값을 주고받을 수도 있고, 이걸 같은 기능을 하는 파이썬 스크립트로 번역할 수도 있고요.
+
+객체 지향 프로그램에서는 이런걸 strategy pattern이나 composite pattern같은 여러 가지 디자인 패턴에 대입해서 설명할 수 있는데 함수형 프로그램에서는 그냥 재귀적으로 정의된 ADT랑 패턴 매칭으로 퉁칠 수 있습니다.
+</aside>
+</script></section></section><section ><section data-markdown><script type="text/template">
+### ZIO
+
+- 순수 함수형 이펙트
+- 강력한 타입 안정성
+- 동시성, 스트리밍
+- 활발한 라이브러리 생태계와 커뮤니티
+  - 스칼라의 Spring
+- 스칼라의 객체지향적인 면 활용
+- Cats 등 다른 함수형 라이브러리와 호환
+
+https://zio.dev
+</script></section><section data-markdown><script type="text/template">
+### ZIO (Cont.)
+
+```scala
+sealed trait ZIO[R, E, A]
+
+type Task[A]  = ZIO[Any, Throwable, A]
+
+type UIO[A]   = ZIO[Any, Nothing  , A]
+type IO[E, A] = ZIO[Any, E        , A]
+// ...
+```
+
+- `R`: Environment
+- `E`: Error
+- `A`: Value
+
+```scala
+R => Either[E, A]
+```
+
+<aside class="notes">
+ZIO는 ZIO 라이브러리에서 이펙트의 단위를 나타내는 타입입니다.
+
+많이들 익숙하실 자바스크립트의 Promise, C#의 Task, python의 Future랑 비슷하게 어떤 타입 A를 결과로 하는 하나의 미니 프로그램이라고 생각하시면 될 것 같습니다. 아까 콘솔 예제처럼요.
+
+하스켈에 익숙하신 분들은 IO 타입에 ReaderT랑 EitherT를 입혀놓은 형태라고 생각하시면 편할 것 같아요.
+</aside>
+</script></section></section><section  data-markdown><script type="text/template">
+### ZIO: 오류 처리
+
+```scala [|1,7|1,8|1,9|2,11|2,12|3,14|3,15-16]
+def findUserByName(name: String): IO[DBError, Option[User]]
+def pureValidation(user: User): Either[DomainError, Unit]
+def flakyApiCall(x: Int): IO[NetworkError, Remote]
+
+def prog: ZIO[Has[Clock], AppError, Remote] =
+  for
+    user <- findUserByName("guersam")
+      .catchAll(e => IO.fail(AppError.Unexpected(e)))
+      .someOrFail(AppError.NotFound("User not found"))
+
+    _ <- IO.from(pureValidation(user))
+      .mapError(e => AppError.FromDomainError(e.msg))
+
+    result <- flakyApiCall(user.apiRef)
+      .retry(Schedule.spaced(1.second) ++ 
+              Schedule.recurs(5))
+      .mapError(e => AppError.Unexpected(e))
+  yield result
+```
+
+<aside class="notes">
+전체성, total function
+
+ZIO error type
+
+Promise, future 타입을 직접 다뤄보면 오류가 발생했을 때 프로그램이 죽거나 하는게 아니라 그 promise 인스턴스만 실패 상태로 바뀌고 try/catch 문법을 쓰지 않고도 .catch 메소드를 체이닝해서 오류를 처리할 수 있지요.
+
+Promise, Future랑 다른 점은, ZIO 타입은 순수한 프로그램의 명세기 때문에 인스턴스가 생기는 시점에서 이미 내부의 이펙트가 발생하고 있는 Promise나 Future 클래스랑 다르게 여기저기 들고 다닐 수가 있고요, 여기에 연결된는 개념이 참조 투명성(referential transparency)이라고 해서 국소 추론(local reasoning) 등 유지보수를 용이하게 하는 특징이 되는데 이건 시간관계상 오늘은 생략할게요.
+
+이 차이가 잘 드러나는 예가 실패한 연산을 재시도할 때, 예를 들어서 비즈니스 로직에 불안정에 외부 API를 호출하는 부분이 있을 수 있잖아요, 그럴 때 promise나 future는 하나의 값이 곧 한 번의 실행이니까 promise 인스턴스를 만드는 곳에서만 재시도를 할 수 있어요. 반면에 ZIO같은 함수형 이펙트는 단순한 명세일 뿐이고 당장 뭐가 실행되는 게 아니니까, 이런 식으로 실패했을 때 어떤 규칙에 따라서 재시도를 해라, 이런 게 쉽게 가능하거든요, (retry 예제)
+
+FAQ
+
+java의 checked exception과 비교:
+- 비동기 환경에서도 똑같이 작동
+- Union type
+
+</aside>
+</script></section><section ><section data-markdown><script type="text/template">
+### ZIO: 모듈간 의존성 관리
+
+#### 예: 의존성 그래프
+
+```text
+           DocRepo                ++          UserRepo
+      ____/   |   \____                       /     \
+     /        |        \                     /       \
+ Logging  Database  BlobStorage          Logging   Database
+    |                    |                  |
+ Console              Logging            Console
+                         |       
+                      Console    
+```
+
+출처: https://zio.dev/howto/migrate/zio-2.x-migration-guide/ <!-- .element: class="small" -->
+</script></section><section data-markdown><script type="text/template">
+#### 객체지향 설계 기법 재사용
+
+- FP in small, OO in large
+- 인터페이스와 구현 분리
+
+<div class="fragment">
+
+```scala
+trait UserRepo: 
+  def getById(id: UserId): IO[DBError, User]
+```
+
+```scala
+case class UserRepoLive(log: Logging, db: Database) 
+  extends UserRepo:
+  // ...
+```
+
+```scala
+case class TestUserLive(ref: Ref[Map[UserId, User]])
+  extends UserRepo:
+```
+
+</div>
+</script></section><section data-markdown><script type="text/template">
+#### ZIO 모듈 타입
+
+##### `Has[A]` <!-- .element: style="margin-top: 1em;" -->
+
+- 타입 수준 `Map`
+- 컴파일 시점 합성
+  - `Has[A] & Has[B]`
+
+##### `ZLayer[-RIn, +E, +ROut]` <!-- .element: style="margin-top: 1em;" -->
+
+- 비동기 생성 지원
+- 안전한 리소스 할당 & 해제
+- 종적, 횡적 합성
+</script></section><section data-markdown><script type="text/template">
+#### ZLayer: 의존성 그래프 정의
+
+```scala
+object UserRepo:
+  val live: URLayer[Has[Logging] & Has[Database], 
+                    Has[UserRepo]] =
+    (for
+      log <- ZIO.service[Logging]
+      db  <- ZIo.service[Database]
+    yield UserRepoLive(log, db)).toLayer
+```
+</script></section><section data-markdown><script type="text/template">
+#### ZLayer: 컴파일 시점 조립
+
+- `a >>> b`: 종적 조립 (`Has[A]` => `Has[B]`)
+- `a ++ b`: 횡적 조립 (`Has[A] & Has[B]`)
+
+```scala
+val userRepo: URLayer[Has[UserRepo]] =
+  ((Console.live >>> Logging.live) ++ Database.live) >>> 
+    UserRepo.live
+```
+
+출처: https://zio.dev/howto/migrate/zio-2.x-migration-guide/ <!-- .element: class="small" -->
+</script></section><section data-markdown><script type="text/template">
+#### ZLayer: 매크로로 더 쉽게
+
+ZIO 1.0
+
+```scala
+val appLayer: URLayer[Any, Has[DocRepo] with Has[UserRepo]] =
+  (((Console.live >>> Logging.live) ++ Database.live ++ (Console.live >>> Logging.live >>> BlobStorage.live)) >>> DocRepo.live) ++
+    (((Console.live >>> Logging.live) ++ Database.live) >>> UserRepo.live)
+    
+val res: ZIO[Any, Nothing, Unit] = myApp.provideLayer(appLayer)
+```
+
+ZIO 2.0
+
+```scala
+val res: ZIO[Any, Nothing, Unit] =
+  myApp.inject(
+    Console.live,
+    Logging.live,
+    Database.live,
+    BlobStorage.live,
+    DocRepo.live,
+    UserRepo.live
+  )
+```
+
+출처: https://zio.dev/howto/migrate/zio-2.x-migration-guide/ <!-- .element: class="small" -->
+</script></section><section data-markdown><script type="text/template">
+#### ZLayer: 매크로로 더 쉽게 - 타입 안전
+
+```scala
+val app: ZIO[Any, Nothing, Unit] =
+  myApp.inject(
+    DocRepo.live,
+    BlobStorage.live,
+//    Logging.live,
+    Database.live,
+    UserRepo.live,
+    Console.live
+  )
+```
+
+<div class="fragment">
+
+```text
+  ZLayer Wiring Error  
+
+❯ missing Logging
+❯     for DocRepo.live
+
+❯ missing Logging
+❯     for UserRepo.live
+```
+
+</div>
+
+출처: https://zio.dev/howto/migrate/zio-2.x-migration-guide/ <!-- .element: class="small" -->
+</script></section><section data-markdown><script type="text/template">
+#### ZLayer: 디버깅
+
+```scala [|8]
+val layer = ZLayer.wire[Has[DocRepo] with Has[UserRepo]](
+  Console.live,
+  Logging.live,
+  DocRepo.live,
+  Database.live,
+  BlobStorage.live,
+  UserRepo.live,
+  ZLayer.Debug.mermaid
+)
+```
+
+출처: https://zio.dev/howto/migrate/zio-2.x-migration-guide/ <!-- .element: class="small" -->
+</script></section><section data-markdown><script type="text/template">
+#### 디버깅 (Cont.)
+
+```text [|16-17]
+[info]   ZLayer Wiring Graph  
+[info] 
+[info] ◉ DocRepo.live
+[info] ├─◑ Logging.live
+[info] │ ╰─◑ Console.live
+[info] ├─◑ Database.live
+[info] ╰─◑ BlobStorage.live
+[info]   ╰─◑ Logging.live
+[info]     ╰─◑ Console.live
+[info] 
+[info] ◉ UserRepo.live
+[info] ├─◑ Logging.live
+[info] │ ╰─◑ Console.live
+[info] ╰─◑ Database.live
+[info] 
+[info] Mermaid Live Editor Link
+[info] https://mermaid-js.github.io/mermaid-live-editor/edit/#eyJjb2RlIjoiZ3JhcGhcbiAgICBDb25zb2xlLmxpdmVcbiAgICBCbG9iU3RvcmFnZS5saXZlIC0tPiBMb2dnaW5nLmxpdmVcbiAgICBMb2dnaW5nLmxpdmUgLS0+IENvbnNvbGUubGl2ZVxuICAgIFVzZXJSZXBvLmxpdmUgLS0+IExvZ2dpbmcubGl2ZVxuICAgIFVzZXJSZXBvLmxpdmUgLS0+IERhdGFiYXNlLmxpdmVcbiAgICBEb2NSZXBvLmxpdmUgLS0+IERhdGFiYXNlLmxpdmVcbiAgICBEb2NSZXBvLmxpdmUgLS0+IEJsb2JTdG9yYWdlLmxpdmVcbiAgICBEYXRhYmFzZS5saXZlXG4gICAgIiwibWVybWFpZCI6ICJ7XG4gIFwidGhlbWVcIjogXCJkZWZhdWx0XCJcbn0iLCAidXBkYXRlRWRpdG9yIjogdHJ1ZSwgImF1dG9TeW5jIjogdHJ1ZSwgInVwZGF0ZURpYWdyYW0iOiB0cnVlfQ==
+```
+
+출처: https://zio.dev/howto/migrate/zio-2.x-migration-guide/ <!-- .element: class="small" -->
+</script></section></section><section  data-markdown><script type="text/template">
+## 남은 주제들
+
+- Property Based Testing
+- Concurrency
+- Event Sourcing/CQRS
+- GraphQL, gRPC
+- Saga Pattern
+- ...
+</script></section><section  data-markdown><script type="text/template">
+## 정리
+
+- 대수적 자료형을 이용한 도메인 모델링
+  - 테이블 주도 설계와 함수형 설계
+  - 통제 가능한 모델 복잡도 관리
+- ZIO로 실제로 유용한 프로그램 만들기
+  - 함수형 이펙트 시스템
+    - 명세와 실행을 분리
+  - ZIO
+    - 오류 처리
+    - 의존성 관리
+
+<aside class="notes">
+오늘 크게 두 가지 주제를 다뤘고요,
+
+대수적 자료형을 이용한 도메인 모델링, ZIO로 실제로 유용한 프로그램 만들기
+
+시간관계상 얘기를 못 하고 넘어간 게 많은데 실제로 함수형 스칼라를 실무에서 쓰면서 느꼈던 점은, 성능과 생산성, 유지보수 용이성 여러 측면에서 적절한 균형을 제공하는 환경인 것 같다는 거였습니다.
+
+아직 자바같은 주류 언어에 비해서는 보완할 부분들이 있지만 생태계가 성장하고 있고, 특히 ZIO같은 경우에는 스칼라 언어를 만든 마틴 오더스키가 가졌던 객체 지향과 함수형 패러다임의 조화라는 비전에 상당히 근접한 예가 아닌가 싶습니다.
+
+오늘 liftIO를 기점으로 여기 발표 들으러 시간 내주신 분들과 저희 연사들이 계속 국내 함수형 언어 생태계를 확장하고 업계 전반적으로 선순환을 만들어 나갈 수 있으면 좋겠습니다.
+</aside>
+</script></section><section  data-markdown><script type="text/template">
+## 감사합니다.
+
+<aside class="notes">
+감사합니다.
+</aside>
+</script></section><section  data-markdown><script type="text/template">
+## Q & A
+</script></section><section  data-markdown><script type="text/template">
+## 오세요 두물머리
+
+기술을 통해 다수의 사람들에게 뛰어난 투자기회를 제공합니다.
+
+Direct Indexing: 당신만의 주가지수를 당신의 계좌에서
+
+- recruit@doomoolmori.com
+- https://doomoolmori.com</script></section></div>
+    </div>
+
+    <script src="./dist/reveal.js"></script>
+
+    <script src="./plugin/markdown/markdown.js"></script>
+    <script src="./plugin/highlight/highlight.js"></script>
+    <script src="./plugin/zoom/zoom.js"></script>
+    <script src="./plugin/notes/notes.js"></script>
+    <script src="./plugin/math/math.js"></script>
+    <script>
+      function extend() {
+        var target = {};
+        for (var i = 0; i < arguments.length; i++) {
+          var source = arguments[i];
+          for (var key in source) {
+            if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
+            }
+          }
+        }
+        return target;
+      }
+
+      // default options to init reveal.js
+      var defaultOptions = {
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        transition: 'default', // none/fade/slide/convex/concave/zoom
+        plugins: [
+          RevealMarkdown,
+          RevealHighlight,
+          RevealZoom,
+          RevealNotes,
+          RevealMath
+        ]
+      };
+
+      // options from URL query string
+      var queryOptions = Reveal().getQueryHash() || {};
+
+      var options = extend(defaultOptions, {"transition":"fade"}, queryOptions);
+    </script>
+
+
+    <script>
+      Reveal.initialize(options);
+    </script>
+  </body>
+</html>

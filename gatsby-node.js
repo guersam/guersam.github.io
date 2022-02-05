@@ -1,4 +1,5 @@
 const path = require(`path`)
+const express = require(`express`)
 const { createFilePath } = require(`gatsby-source-filesystem`)
 
 exports.createPages = async ({ graphql, actions, reporter }) => {
@@ -112,4 +113,8 @@ exports.createSchemaCustomization = ({ actions }) => {
       slug: String
     }
   `)
+}
+
+exports.onCreateDevServer = ({ app }) => {
+  app.use(express.static(`static`))
 }
