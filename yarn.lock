@@ -5212,6 +5212,17 @@ gatsby-react-router-scroll@^5.6.0:
     "@babel/runtime" "^7.15.4"
     prop-types "^15.7.2"
 
+gatsby-remark-autolink-headers@^5.6.0:
+  version "5.6.0"
+  resolved "https://registry.yarnpkg.com/gatsby-remark-autolink-headers/-/gatsby-remark-autolink-headers-5.6.0.tgz#60ed2ab5e1584112318788c237f4bcd853f8c666"
+  integrity sha512-asv2YVVUHZMVYNYNTEokvvofedRUDxhBInkp/2rQH9TJrGERkE/dPayD7dTFcjnvb7fMnBpJiQPTiYsyS4UEww==
+  dependencies:
+    "@babel/runtime" "^7.15.4"
+    github-slugger "^1.3.0"
+    lodash "^4.17.21"
+    mdast-util-to-string "^2.0.0"
+    unist-util-visit "^2.0.3"
+
 gatsby-remark-copy-linked-files@^5.6.0:
   version "5.6.0"
   resolved "https://registry.yarnpkg.com/gatsby-remark-copy-linked-files/-/gatsby-remark-copy-linked-files-5.6.0.tgz#05d1aaecbb1a1114b1339071fde0429ed3c41671"
@@ -5272,6 +5283,14 @@ gatsby-remark-smartypants@^5.6.0:
     retext "^7.0.1"
     retext-smartypants "^4.0.0"
     unist-util-visit "^2.0.3"
+
+gatsby-remark-table-of-contents@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/gatsby-remark-table-of-contents/-/gatsby-remark-table-of-contents-2.0.0.tgz#9df384c5915a6b038deedcf831a1997fbb830974"
+  integrity sha512-Hl/zfvwX0FWMjaurzOTLpHNQ4rOd4AXnNrRsqJLwZPecZBc42UDX/JFL4hYS/NfrPd/svtwipkBXGo51CaKFXw==
+  dependencies:
+    js-yaml "^3.14.1"
+    mdast-util-toc "^5.1.0"
 
 gatsby-sharp@^0.0.1:
   version "0.0.1"
@@ -5622,7 +5641,7 @@ github-from-package@0.0.0:
   resolved "https://registry.yarnpkg.com/github-from-package/-/github-from-package-0.0.0.tgz#97fb5d96bfde8973313f20e8288ef9a167fa64ce"
   integrity sha1-l/tdlr/eiXMxPyDoKI75oWf6ZM4=
 
-github-slugger@^1.2.1:
+github-slugger@^1.2.1, github-slugger@^1.3.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/github-slugger/-/github-slugger-1.4.0.tgz#206eb96cdb22ee56fdc53a28d5a302338463444e"
   integrity sha512-w0dzqw/nt51xMVmlaV1+JRzN+oCa1KfcgGEWhxUG16wbdA+Xnt/yoFO8Z8x/V82ZcZ0wy6ln9QDup5avbhiDhQ==
@@ -6765,7 +6784,7 @@ js-cookie@^3.0.1:
   resolved "https://registry.yarnpkg.com/js-tokens/-/js-tokens-4.0.0.tgz#19203fb59991df98e3a287050d4647cdeaf32499"
   integrity sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==
 
-js-yaml@^3.13.1:
+js-yaml@^3.13.1, js-yaml@^3.14.1:
   version "3.14.1"
   resolved "https://registry.yarnpkg.com/js-yaml/-/js-yaml-3.14.1.tgz#dae812fdb3825fa306609a8717383c50c36a0537"
   integrity sha512-okMH7OXXJ7YrN9Ok3/SXrnu4iX9yOk+25nqX4imS2npuvTYDmo/QEZoqwZkYaIDk3jVvBOTOIEgEhaLOynBS9g==
