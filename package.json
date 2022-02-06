@@ -23,6 +23,7 @@
     "gatsby-remark-images": "^6.6.0",
     "gatsby-remark-prismjs": "^6.6.0",
     "gatsby-remark-responsive-iframe": "^5.6.0",
+    "gatsby-remark-series": "^1.0.3",
     "gatsby-remark-smartypants": "^5.6.0",
     "gatsby-remark-table-of-contents": "^2.0.0",
     "gatsby-source-filesystem": "^4.6.0",

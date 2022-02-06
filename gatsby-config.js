@@ -45,9 +45,21 @@ module.exports = {
             },
           },
           {
+            resolve: `gatsby-remark-series`,
+            options: {
+              render: {
+                placeholder: `top`,
+                
+              },
+              resolvers: {
+                slug: mdNode => mdNode.frontmatter.slug || mdNode.fields.slug,
+              }
+            }
+          },
+          {
             resolve: `gatsby-remark-table-of-contents`,
             options: {
-              exclude: ["Table of Contents", "목차"],
+              exclude: ["Table of Contents", /목\s*차/],
               tight: true,
               ordered: false,
               fromHeading: 1,
@@ -56,7 +68,20 @@ module.exports = {
             },
           },
           `gatsby-remark-autolink-headers`,
-          `gatsby-remark-prismjs`,
+          {
+            resolve: `gatsby-remark-prismjs`,
+            options: {
+              languageExtensions: [
+                {
+                  language: `scala`,
+                  extend: `scala`,
+                  definition: {
+                    keyword: /=|<-|=>|<:|>:|@|=>>|\?=>|\b(?:abstract|as|case|catch|class|def|derives|do|else|end|enum|export|extends|extension|final|finally|for|forSome|given|if|implicit|import|infix|inline|lazy|match|new|null|object|opaque|open|override|package|private|protected|return|sealed|self|super|then|this|throw|trait|transparent|try|type|using|val|var|while|with|yield)\b/,
+                  }
+                }
+              ]
+            }
+          },
           `gatsby-remark-copy-linked-files`,
           `gatsby-remark-smartypants`,
         ],
