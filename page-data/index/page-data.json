@@ -1,0 +1,5 @@
+{
+    "componentChunkName": "component---src-pages-index-js",
+    "path": "/",
+    "result": {"data":{"site":{"siteMetadata":{"title":"guersam.com"}},"allMarkdownRemark":{"nodes":[{"excerpt":"자주 쓰는 유용한 스칼라 라이브러리 몇 개를 소개합니다. 스칼라 생태계가 조금씩 커지면서 비슷한 목적의 라이브러리가 여러 개 나왔는데(특히 JSON…","fields":{"slug":"/2022/favorite-scala-libraries-for-web/"},"frontmatter":{"date":"February 04, 2022","title":"(WIP) 웹 서버에서 자주 쓰는 스칼라 라이브러리 소개","description":"2022년 버전"}},{"excerpt":"…","fields":{"slug":"/2021/new-new-new-new-beginnings/"},"frontmatter":{"date":"August 15, 2021","title":"블로그 재재재재개장","description":"3년만에 드디어"}}]}},"pageContext":{}},
+    "staticQueryHashes": ["2841359383","3257411868"]}

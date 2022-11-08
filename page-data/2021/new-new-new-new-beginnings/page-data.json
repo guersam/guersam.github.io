@@ -1,0 +1,5 @@
+{
+    "componentChunkName": "component---src-templates-blog-post-js",
+    "path": "/2021/new-new-new-new-beginnings/",
+    "result": {"data":{"site":{"siteMetadata":{"title":"guersam.com"}},"markdownRemark":{"id":"6c43e2c0-4589-5cc1-aa67-b4240b76900b","excerpt":"…","html":"<p>블로그 만들어야지 하고 개츠비 블로그 스타터킷만 달랑 적용해놓고 몇 년 동안 남의 이름으로 된 사이트를 운영하다가 드디어 뭔가 적었습니다.</p>\n<p>스칼라 함수형 프로그래밍과 개발문화 또는 그때그때 바뀌는 관심사에 따른 잡설을 잘 써야겠다는 부담 내려놓으려고 노력하면서 가볍게 올릴 예정입니다.</p>\n<p>계기를 마련해주신 <a href=\"https://lqez.dev/\">박현우님</a>께 다시한번 감사드립니다. <a href=\"https://one-day.dev/\">하루개발</a> 많이 봐주세요. (언젠가 두물머리도 출연 예정)</p>\n<p>원래는 8/15일까지 올리기로 했는데 지금도 UTC로는 8/15니까…</p>","frontmatter":{"title":"블로그 재재재재개장","date":"August 15, 2021","description":"3년만에 드디어"}},"previous":null,"next":{"fields":{"slug":"/2022/favorite-scala-libraries-for-web/"},"frontmatter":{"title":"(WIP) 웹 서버에서 자주 쓰는 스칼라 라이브러리 소개"}}},"pageContext":{"id":"6c43e2c0-4589-5cc1-aa67-b4240b76900b","previousPostId":null,"nextPostId":"363f954d-c751-5b76-814b-1a1c5aac280d"}},
+    "staticQueryHashes": ["2841359383","3257411868"]}
