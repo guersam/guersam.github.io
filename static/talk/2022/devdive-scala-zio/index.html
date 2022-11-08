@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <title></title>
+    <link rel="stylesheet" href="dist/reveal.css" />
+    <link rel="stylesheet" href="dist/theme/white.css" id="theme" />
+    <link rel="stylesheet" href="plugin/highlight/zenburn.css" />
+	<link rel="stylesheet" href="css/layout.css" />
+	<link rel="stylesheet" href="plugin/customcontrols/style.css">
+
+
+
+    <script defer src="dist/fontawesome/all.min.js"></script>
+
+	<script type="text/javascript">
+		var forgetPop = true;
+		function onPopState(event) {
+			if(forgetPop){
+				forgetPop = false;
+			} else {
+				parent.postMessage(event.target.location.href, "app://obsidian.md");
+			}
+        }
+		window.onpopstate = onPopState;
+		window.onmessage = event => {
+			if(event.data == "reload"){
+				window.document.location.reload();
+			}
+			forgetPop = true;
+		}
+
+		function fitElements(){
+			const itemsToFit = document.getElementsByClassName('fitText');
+			for (const item in itemsToFit) {
+				if (Object.hasOwnProperty.call(itemsToFit, item)) {
+					var element = itemsToFit[item];
+					fitElement(element,1, 1000);
+					element.classList.remove('fitText');
+				}
+			}
+		}
+
+		function fitElement(element, start, end){
+
+			let size = (end + start) / 2;
+			element.style.fontSize = `${size}px`;
+
+			if(Math.abs(start - end) < 1){
+				while(element.scrollHeight > element.offsetHeight){
+					size--;
+					element.style.fontSize = `${size}px`;
+				}
+				return;
+			}
+
+			if(element.scrollHeight > element.offsetHeight){
+				fitElement(element, start, size);
+			} else {
+				fitElement(element, size, end);
+			}		
+		}
+
+
+		document.onreadystatechange = () => {
+			fitElements();
+			if (document.readyState === 'complete') {
+				if (window.location.href.indexOf("?export") != -1){
+					parent.postMessage(event.target.location.href, "app://obsidian.md");
+				}
+				if (window.location.href.indexOf("print-pdf") != -1){
+					let stateCheck = setInterval(() => {
+						clearInterval(stateCheck);
+						window.print();
+					}, 250);
+				}
+			}
+	};
+
+
+        </script>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides"><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<style>
+body {
+  word-break: keep-all;
+}
+.reveal h1 { font-size: 1.8em; }
+.reveal h2, .reveal h3 {
+  margin-bottom: 0.4em;
+}
+
+.reveal .footnotes { margin-top: 1em; }
+.reveal .footnotes .footnote { font-size: 0.6em; }
+.reveal .footnotes .footnote  a { color: #333; }
+
+.reveal .narrow-list ul { margin-left: 0; }
+
+.xs { font-size: 0.6em; }
+.sm { font-size: 0.8em; }
+
+.caption { font-size: 0.4em;  }
+.caption a { color: #333;  }
+
+.mono { font-family: monospace; }
+.red { color: red; }
+.blue { color: blue; }
+.green { color: green; }
+</style>
+
+# Scala와 ZIO로 쉽고 안전한 동시성 프로그래밍
+
+박지수
+
+CTO, 두물머리
+
+GreenLabs Dev Dive 2022
+</div>
+
+<aside class="notes"><p>안녕하세요, 두물머리의 박지수라고 합니다. 오늘은 Scala와 ZIO로 쉽고 안전하게 동시성 프로그래밍하는 법에 대해 얘기를 나눠보겠습니다.</p>
+</aside></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## 함수형 프로그래밍?
+</div>
+
+<aside class="notes"><p>먼저 &quot;함수형 프로그래밍&quot; 하면 어떤 생각이 드세요?</p>
+</aside></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## 함수형 프로그래밍에 대해 
+
+<split even style="width: 90%;" class="narrow-list">
+<div class="block">
+
+얘기하는 것들 
+  - 간결한 문법
+  - 불변성
+  - 함수 합성
+  - M-word
+</div>
+
+ <!-- .element: class="fragment" -->
+<div class="block">
+
+잘 얘기하지 않는 것들
+- 라이브러리 생태계
+- 러닝커브
+- 개발자 도구
+- 성능
+</div>
+
+ <!-- .element: class="fragment" -->
+</split>
+</div>
+
+<aside class="notes"><p>함수형 프로그래밍 소개하는 자료들 보면 흔히 나오는 얘기들이 있죠, ...</p>
+<p>근데 상대적으로 덜 얘기되는 것들도 있습니다.</p>
+</aside></script></section><section ><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## 우리가 실제로 만나는 문제들
+
+
+<img src="attachments/slack notification flowchart.png" alt="" style="width: 400px; object-fit: fill">
+
+
+<div class="block">
+
+<!-- .element: class="caption" -->
+이미지 출처: https://slack.engineering/reducing-slacks-memory-footprint/ 
+</div>
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## 우리가 실제로 만나는 문제들
+
+- 리퀘스트별로 생기는 임시 파일을 안 지웠다
+- 필요한 외부 API가 불안정하다
+- 상태가 있는 리소스를 공유해야 한다
+- ...근데 이거 너무 오래 걸린다 좀 병렬로 안되나
+</div></script></section></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="attachments/Scala Logo.png" alt="" style="width: 600px; object-fit: fill">
+
+
+https://www.scala-lang.org/
+</div></script></section><section ><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## 스칼라
+
+- "**SCALA**ble language"
+- 다중 패러다임 프로그래밍 언어
+- 자바 제네릭을 설계한 마틴 오더스키가 주도
+- 사용사례
+  - 트위터, 코세라, 사운드클라우드 등 
+  - 국내: 두물머리, 데브시스터즈 등
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 객체지향
+
+
+```scala
+final abstract class Int private extends AnyVal {
+
+  // ...
+
+  def +(x: Int): Int
+
+  def -(x: Long): Long
+
+  // ...
+}
+```
+
+자바보다 더
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 함수형
+
+```scala
+def queens(n: Int): List[List[(Int, Int)]] =
+  def placeQueens(k: Int): List[List[(Int, Int)]] =
+    if (k == 0)
+      List(List())
+    else
+      for queens <- placeQueens(k - 1)
+          column <- 1 to n
+          queen = (k, column)
+          if isSafe(queen, queens)
+      yield queen :: queens
+
+  placeQueens(n)
+```
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 함수형 + 객체지향
+
+
+```scala
+enum DiscountPolicy:
+  case Percentage(percent: Int)
+  case Fixed(amount: Money, minSubtotal: Money)
+
+  def calculate(subtotal: Money) = this match
+    case Percentage(p) =>
+      Right(subtotal * p / 100)
+
+    case Fixed(amt, min) =>
+      if (subtotal >= min) 
+        Right(subtotal - amt)
+      else 
+        Left(InsufficientSubtotal)
+```
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 타입 안정성 & 메타프로그래밍
+
+```scala
+import zio.json.*
+
+case class User(id: Long, name: String)
+
+println(User(1L, "guersam").toJson)
+```
+
+<div class="block">
+
+<!-- .element: style="width: 100%; overflow: auto" class="fragment sm" -->
+```text
+[error] ./JsonExample.sc:8:35: No given instance of type zio.json.JsonEncoder[JsonExample.User] was found for parameter encoder of method toJson in class EncoderOps.
+[error] I found:
+[error] 
+[error]     zio.json.JsonEncoder.fromCodec[JsonExample.User](
+[error]       /* missing */summon[zio.json.JsonCodec[JsonExample.User]]
+[error]     )
+[error] 
+[error] But no implicit values were found that match type zio.json.JsonCodec[JsonExample.User].
+[error] println(User(1L, "guersam").toJson)
+[error]      
+```
+</div>
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 타입 안정성 & 메타프로그래밍
+
+```scala [|4]
+import zio.json.*
+
+case class User(id: Long, name: String)
+  derives JsonCodec
+
+println(User(1L, "guersam").toJson)
+```
+
+<div class="block">
+
+<!-- .element: style="width: 100%; overflow: auto" class="fragment" -->
+```text
+{"id":1,"name":"guersam"}
+```
+</div>
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 다양한 실행 환경
+
+- JVM
+- JavaScript
+- Native
+  - Scala Native
+  - GraalVM Native Image
+</div></script></section></section><section ><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## 2020년 이전 스칼라 생태계
+
+트위터, 링크드인, 월마트 등 유의미한 채택 사례를 만들며 주목받았으나...
+
+애매한 포지셔닝으로 점유율 하락
+
+더 나은 자바  vs.  덜떨어진 하스켈
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## 2022년 현재
+
+진입장벽을 낮추기 위한 노력들
+- Scala 3
+- Scala Center
+- VirtusLab, Ziverge, Typelevel...
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### Scastie
+
+<img src="attachments/Scastie - Raytracing Demo.png" alt="" style="width: 680px; object-fit: fill">
+
+https://scastie.scala-lang.org/
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### Scala CLI
+
+<img src="Spaces/Projects/GreenLabs DevDive 2022/assets/scala-cli_powerful-scripts.gif" alt="" style="width: 680px; object-fit: fill">
+
+https://scala-cli.virtuslab.org/
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### IDE Support
+
+<split even gap="1">
+<div class="block">
+
+Metals + VS Code
+<img src="Spaces/Projects/GreenLabs DevDive 2022/assets/scala-ide-metals.gif" alt="" style="object-fit: scale-down">
+
+</div>
+
+
+<div class="block">
+
+IntelliJ Scala Plugin
+<img src="Spaces/Projects/GreenLabs DevDive 2022/assets/scala-ide-intellij.gif" alt="" style="object-fit: scale-down">
+
+</div>
+
+
+</split>
+</div></script></section></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+<img src="attachments/ZIO Logo.png" alt="" style="width: 600px; object-fit: fill">
+
+
+https://zio.dev/
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## ZIO
+
+- 스칼라 기반 함수형 이펙트 시스템
+- 애플리케이션 프레임워크
+- 스칼라의 스프링 + α
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## Scala & ZIO: FP + OOP
+
+<split even style="width: 90%;" class="narrow-list">
+<div class="block">
+
+- **FP**: 유지보수
+  - 데이터 모델링
+  - 함수형 디자인
+  - 합성
+</div>
+
+
+<div class="block">
+
+- **OOP**: 코드 조직화
+  - 메소드
+  - 생성자
+  - 모듈
+</div>
+
+
+</split>
+</div>
+
+<aside class="notes"><p>We use FP to achieve <strong>code maintainability</strong> and OOP to achieve <strong>code organization</strong>:</p>
+<p>데이터 모델링: ADT
+함수형 디자인: DSL
+합성: 순수함수, 참조 투명성</p>
+<p>메소드: 데이터와 동작의 결합이 꼭 나쁜건 아님
+생성자: which help us to create a new instance of a data type
+모듈: which allows us to bundle together related operations into a single unit</p>
+</aside></script></section><section ><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## ZIO의 장점
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 고성능
+- 논 블로킹 런타임
+- 블로킹 스레드 풀 +
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 안전성
+
+- 타입 안전성
+- 리소스 안전성
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 동시성
+- Fiber 기반
+- 구조화된 동시성
+- 인터럽트
+- 데이터 구조
+  - 저수준: Promise, 큐, 세마포어 ...
+- 고수준: STM, 서킷브레이커<sup id="fnref:1" role="doc-noteref">1</sup>, ...
+
+
+
+<div class="footnotes" role="doc-endnotes">
+<ol>
+<li id="fn:1" role="doc-endnote" class="footnote"><p>
+
+커뮤니티 라이브러리 https://www.vroste.nl/rezilience/
+
+</p></li></ol>
+</div>
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 배터리 포함
+
+* **로깅**: SLF4J 호환
+* **환경설정**: 환경변수, AWS 등 조합
+* **테스팅**: 프로퍼티 기반 테스트
+* **모니터링**: JMX, 프로메테우스 등
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 활발하고 (장차) 풍부한 생태계 <!-- .element: style="margin-bottom: 0" -->
+
+<split style="width: 100%;">
+<img src="attachments/Pasted image 20221106221828.png" alt="" style="width: 460px; object-fit: fill">
+
+<img src="attachments/Pasted image 20221106221851.png" alt="" style="width: 360px; object-fit: fill">
+
+</split>
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 점진적인 러닝커브
+
+- OOP 친화적
+- 자바 라이브러리 호환성
+- 자연스러운 API 발견 및 학습
+</div></script></section></section><section ><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## `ZIO` 데이터 타입
+
+<div class="mono" style="border: 1px solid black; padding: 20px; margin-bottom: 60px;">
+ZIO[<span class="green">-R</span>,
+<span class="red">+E</span>,
+<span class="blue">+A</span>]
+</div>
+
+<div class="block">
+
+<!-- .element: style="margin-left: -1.2em" -->
+- &shy;<!-- .element: class="fragment" data-fragment-index="1" --><span class="blue">`A`</span>:  성공 타입
+- &shy;<!-- .element: class="fragment" data-fragment-index="2" --><span class="red">`E`</span>:  실패 타입
+- &shy;<!-- .element: class="fragment" data-fragment-index="3" --><span class="green">`R`</span>: 환경 타입
+</div>
+
+
+
+<div class="block">
+
+<!-- .element: style="padding: 20px; margin-top: 20px; margin-left: 0.4em" class="mono fragment" -->
+<span class="green">R</span> =>
+Either[<span class="red">E</span>,
+<span class="blue">A</span>]
+</div>
+</div>
+
+<aside class="notes"><p>ZIO의 가장 기본적인 부분은 ZIO라는 타입입니다. 자바스크립트, 파이썬, C#의 Promise, Task, Future랑 비슷한 거라고 보시면 되고요, 이 타입은 R, E, A 세 개의 타입파라미터를 받아요.</p>
+<p>A는 자바스크립트, 파이썬, C#의 Promise, Task, Future</p>
+<p>E는 실패했을때</p>
+<p>R은 환경 타입입니다. 이 값이 제공돼야 이펙트를 실행할 수 있다는 뜻이에요. 하스켈 공부해보신 분 있으시면 Reader 타입에 대해 들어보셨을 텐데 그거랑 같은 거라 보시면 됩니다.</p>
+<p>이해를 돕기 위해 다르게 표현해보면 ZIO 타입은 개념적으로 R 타입 값을 받아서 A나 E 중 하나의 값을 돌려주는 함수라고 보시면 돼요.</p>
+</aside></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### `ZIO` 데이터 타입의 예
+
+`ZIO[Any, IOException, Byte]`  <!-- .element: class="sm" -->
+
+`ZIO[Connection, SQLException, ResultSet]`  <!-- .element: class="sm fragment" -->
+
+`ZIO[HttpRequest, HttpFailure, HttpSucceess]`  <!-- .element: class="sm fragment" -->
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### `R` 타입은 합성 가능
+
+<div class="block">
+
+<!-- .element: style="margin-bottom: 2em; margin-top: 1em" class="sm mono" -->
+ZIO[**UserSession & HttpRequest**, E, A]
+</div>
+
+
+
+그리고 타입 추론 과정에서 자동으로 합성됨
+</div></script></section></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## 간단한 ZIO 프로그램
+
+```scala
+import zio.ZIOAppDefault
+import zio.Console.*
+
+object MyApp extends ZIOAppDefault:
+
+  def run =
+    for _ <- printLine("Hello! What is your name?")
+        n <- readLine
+        _ <- printLine(s"Hello, $n, good to meet you!")
+    yield ()
+```
+</div></script></section><section ><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## 예: 리소스 안전성
+
+자바: try-with-resources
+
+```java
+try (Connection conn = makeConnection()) {
+  // ... use
+} catch(...) {  }
+```
+
+파이썬: `with` 구문
+
+```python
+with open(dest, 'wb') as f:
+  # use f
+```
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### `try`,  `with`의 단점
+
+- 합성가능하지 않음
+- 필요할 때 해제 시점을 늦츨 수 없음
+- 비동기 코드에는 (편하게) 사용불가
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### `zio.Scope`
+
+안전하고 합성 가능한 리소스 관리
+
+여러 개 자원의 생명주기를 한번에 관리 가능
+
+```scala
+import zio._  
+  
+trait Scope {  
+  def addFinalizerExit(finalizer: Exit[Any, Any] => UIO[Any]): UIO[Unit]  
+  def close(exit: => Exit[Any, Any]): UIO[Unit]  
+}
+```
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### `Scope`를 요구하는 자원 만들기
+
+```scala [|6-7|9-10|12-13]
+import zio._  
+  
+import java.io.IOException  
+import scala.io._  
+  
+def acquire(name: String): ZIO[Any, IOException, Source] =  
+  ZIO.attemptBlockingIO(Source.fromFile(name))  
+  
+def release(source: Source): ZIO[Any, Nothing, Unit] =  
+  ZIO.succeedBlocking(source.close())  
+  
+def source(name: String): ZIO[Scope, IOException, Source] =  
+  ZIO.acquireRelease(acquire(name))(release(_))
+```
+
+<div class="block">
+
+<!-- .element: class="fragment" -->
+`source` 함수의 `R` 타입 파라미터에 추가된 `Scope`
+</div>
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 리소스 사용하기
+
+```scala [|2|1]
+def contents(name: String): ZIO[Any, IOException, Chunk[String]] =
+  ZIO.scoped {
+    source(name).flatMap { source =>
+      ZIO.attemptBlockingIO(
+        Chunk.fromIterator(source.getLines()))
+    }
+  }
+```
+
+`ZIO.scoped` 로 프로그램을 감싸면 `Scope` 타입 요구사항이 제거됨
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### `Scope`를 제공하지 않으면...
+
+<img src="attachments/ZIO Scope Error.png" alt="" style="object-fit: scale-down">
+
+
+컴파일 안됨
+</div></script></section><section data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+### 타입 추론과 스코프 합성
+
+```scala
+def makeConnection: ZIO[Scope, IOException, Connectionn] = ???
+
+def makeFile: ZIO[Scope, IOException, File] = ???
+
+val task: ZIO[Scope, IOException, result] =
+  for
+    conn <- makeConnection
+    file <- makeFile
+    result <- doTheJob(conn, file)
+  yield result
+
+ZIO.scoped(task): ZIO[Any, Throwable, Result]
+```
+
+스코프가 닫히면 생성된 역순으로 리소스를 반납
+</div></script></section></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## 좀더 실용적인 예
+
+데이터 소스 N개에 대해서 작업을 수행하고 결과를 저장
+
+- 데이터의 종류에 따라 필요한 작업이 다름
+  1. 간단히 처리하면 되는 것
+  2. 복잡한 웹앱을 스크래핑해야하는 것도 있음
+
+- 근데 셀레니엄 드라이버 만들기가 비싸니까 꼭 필요할 때만 만들었으면 좋겠다
+
+- CPU도 여러 개 달렸는데 기왕이면 병렬 처리도 됐으면
+
+[gist](https://gist.github.com/guersam/6cc6f3186d572820ba737cbe4cbe3ee9) / 
+[scastie](https://scastie.scala-lang.org/guersam/zsWRVrXjQryouE70pZvJfQ/24)
+</div></script></section><section  data-markdown><script type="text/template"><!-- .slide: class="drop" -->
+<div class="" style="position: absolute; left: 0px; top: 0px; height: 700px; width: 960px; min-height: 700px; display: flex; flex-direction: column; align-items: center; justify-content: center" absolute="true">
+
+## 스칼라 많이 써주세요
+
+라 스칼라 코딩단 디스코드: https://discord.gg/2JRghJG72s
+
+
+<img src="attachments/qr-discord-gg.svg" alt="" style="object-fit: scale-down">
+
+
+
+
+<script>
+setTimeout(function () { 
+  document.querySelectorAll('.scala.hljs').forEach((el) => {
+    el.innerHTML = el.innerHTML.replace(/\b(enum|derives)\b/, '<span class="hljs-keyword">$1</span>')
+  });
+
+  Array.from(document.links)
+    .filter(link => link.hostname != window.location.hostname)
+    .forEach(link => link.target = '_blank');
+}, 100);
+__SCRIPT_END__
+</div></script></section></div>
+    </div>
+
+    <script src="dist/reveal.js"></script>
+
+    <script src="plugin/markdown/markdown.js"></script>
+    <script src="plugin/highlight/highlight.js"></script>
+    <script src="plugin/zoom/zoom.js"></script>
+    <script src="plugin/notes/notes.js"></script>
+    <script src="plugin/math/math.js"></script>
+	<script src="plugin/mermaid/mermaid.js"></script>
+	<script src="plugin/chart/chart.min.js"></script>
+	<script src="plugin/chart/plugin.js"></script>
+	<script src="plugin/customcontrols/plugin.js"></script>
+
+    <script>
+      function extend() {
+        var target = {};
+        for (var i = 0; i < arguments.length; i++) {
+          var source = arguments[i];
+          for (var key in source) {
+            if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
+            }
+          }
+        }
+        return target;
+      }
+
+	  function isLight(color) {
+		let hex = color.replace('#', '');
+
+		// convert #fff => #ffffff
+		if(hex.length == 3){
+			hex = `${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`;
+		}
+
+		const c_r = parseInt(hex.substr(0, 2), 16);
+		const c_g = parseInt(hex.substr(2, 2), 16);
+		const c_b = parseInt(hex.substr(4, 2), 16);
+		const brightness = ((c_r * 299) + (c_g * 587) + (c_b * 114)) / 1000;
+		return brightness > 155;
+	}
+
+	var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--r-background-color').trim();
+	var isLight = isLight(bgColor);
+
+	if(isLight){
+		document.body.classList.add('has-light-background');
+	} else {
+		document.body.classList.add('has-dark-background');
+	}
+
+      // default options to init reveal.js
+      var defaultOptions = {
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        transition: 'default', // none/fade/slide/convex/concave/zoom
+        plugins: [
+          RevealMarkdown,
+          RevealHighlight,
+          RevealZoom,
+          RevealNotes,
+          RevealMath.MathJax3,
+		  RevealMermaid,
+		  RevealChart,
+		  RevealCustomControls,
+        ],
+
+
+    	allottedTime: 120 * 1000,
+
+		mathjax3: {
+			mathjax: 'plugin/math/mathjax/tex-mml-chtml.js',
+		},
+		markdown: {
+		  gfm: true,
+		  mangle: true,
+		  pedantic: false,
+		  smartLists: false,
+		  smartypants: false,
+		},
+
+		mermaid: {
+			theme: isLight ? 'default' : 'dark',
+		},
+
+		customcontrols: {
+			controls: [
+			]
+		},
+      };
+
+      // options from URL query string
+      var queryOptions = Reveal().getQueryHash() || {};
+
+      var options = extend(defaultOptions, {"width":960,"height":700,"margin":0.04,"controls":true,"progress":true,"slideNumber":false,"transition":"fade","transitionSpeed":"default"}, queryOptions);
+    </script>
+
+    <script>
+      Reveal.initialize(options);
+    </script>
+    <script>
+      setTimeout(function () { 
+        document.querySelectorAll('.scala.hljs').forEach((el) => {
+          el.innerHTML = el.innerHTML.replace(/\b(enum|derives)\b/, '<span class="hljs-keyword">$1</span>')
+        });
+
+        Array.from(document.links)
+          .filter(link => link.hostname != window.location.hostname)
+          .forEach(link => link.target = '_blank');
+      }, 100);
+    </script>
+  </body>
+
+  <!-- created with Advanced Slides -->
+</html>
